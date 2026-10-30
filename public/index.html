@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schachanalyse</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236f9150'/><text x='16' y='25' font-size='24' text-anchor='middle' fill='white'>♞</text></svg>">
+  <link rel="stylesheet" href="vendor/chessground/assets/chessground.base.css">
+  <link rel="stylesheet" href="vendor/chessground/assets/chessground.cburnett.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "chess.js": "./vendor/chess.js/chess.js",
+        "chessground": "./vendor/chessground/dist/chessground.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Schachanalyse</h1>
+    <div class="topbar-actions">
+      <button id="btn-import" class="btn primary">Partie laden</button>
+      <button id="btn-settings" class="btn" title="Einstellungen">Einstellungen</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="board-col">
+      <div class="player player-top" id="player-top"></div>
+      <div class="board-row">
+        <div class="evalbar" id="evalbar" title="Bewertung">
+          <div class="evalbar-fill" id="evalbar-fill"></div>
+          <span class="evalbar-text" id="evalbar-text"></span>
+        </div>
+        <div class="board-wrap">
+          <div id="board" class="board"></div>
+          <div id="badge-layer" class="badge-layer"></div>
+          <div id="promo" class="promo hidden"></div>
+        </div>
+      </div>
+      <div class="player player-bottom" id="player-bottom"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="opening" id="opening">Keine Partie geladen</div>
+        <div class="game-line" id="game-line"></div>
+        <div class="progress hidden" id="progress">
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <span id="progress-text"></span>
+        </div>
+      </div>
+
+      <div class="move-info" id="move-info"></div>
+
+      <div class="movelist" id="movelist" tabindex="-1"></div>
+
+      <div class="nav">
+        <button class="btn icon" id="nav-start" title="Anfang (Pos1)">&#x23EE;</button>
+        <button class="btn icon" id="nav-prev" title="Zurück (Pfeil links)">&#x25C0;</button>
+        <button class="btn icon" id="nav-next" title="Vor (Pfeil rechts)">&#x25B6;</button>
+        <button class="btn icon" id="nav-end" title="Ende (Ende)">&#x23ED;</button>
+        <span class="nav-sep"></span>
+        <button class="btn icon" id="nav-flip" title="Brett drehen (F)">&#x21C5;</button>
+        <button class="btn icon toggle on" id="nav-arrow" title="Pfeil für besten Zug (B)">&#x279A;</button>
+        <button class="btn icon" id="nav-main" title="Zurück zur Hauptpartie">&#x2302;</button>
+        <button class="btn icon toggle on" id="nav-sound" title="Ton ausschalten (M)">&#x1F50A;</button>
+      </div>
+
+      <div class="summary" id="summary"></div>
+
+      <div class="graph" id="graph"></div>
+    </section>
+  </main>
+
+  <!-- Import-Dialog -->
+  <dialog id="dlg-import" class="dialog">
+    <form method="dialog" class="dialog-body" id="import-form">
+      <h2>Partie laden</h2>
+      <div class="tabs">
+        <button type="button" class="tab active" data-tab="text">PGN / Züge</button>
+        <button type="button" class="tab" data-tab="link">Link</button>
+      </div>
+      <div class="tab-page" data-page="text">
+        <label for="pgn-input">PGN oder Zugfolge (englisch N B R Q K oder deutsch S L T D K)</label>
+        <textarea id="pgn-input" rows="10" spellcheck="false" placeholder="1. e4 e5 2. Sf3 Sc6 3. Lb5 a6&#10;&#10;oder PGN mit Kopfzeilen"></textarea>
+        <div class="row">
+          <button type="button" class="btn small" id="btn-example">Beispielpartie</button>
+        </div>
+        <fieldset class="players-form">
+          <legend>Spieler (optional, überschreibt Angaben aus dem PGN-Kopf)</legend>
+          <span class="dot w" aria-hidden="true"></span>
+          <input id="white-name" type="text" placeholder="Name Weiß" aria-label="Name Weiß" autocomplete="off">
+          <input id="white-elo" type="text" inputmode="numeric" maxlength="4" placeholder="Elo" aria-label="Elo Weiß" autocomplete="off">
+          <span class="dot b" aria-hidden="true"></span>
+          <input id="black-name" type="text" placeholder="Name Schwarz" aria-label="Name Schwarz" autocomplete="off">
+          <input id="black-elo" type="text" inputmode="numeric" maxlength="4" placeholder="Elo" aria-label="Elo Schwarz" autocomplete="off">
+        </fieldset>
+      </div>
+      <div class="tab-page hidden" data-page="link">
+        <label for="link-input">Partie-Link (Lichess oder Chess.com)</label>
+        <input id="link-input" type="url" placeholder="https://lichess.org/abcdEFGH  oder  https://www.chess.com/game/live/123456789">
+        <label for="user-input">Chess.com-Benutzername (nur für Chess.com-Links nötig)</label>
+        <input id="user-input" type="text" placeholder="z. B. einer der beiden Spieler" autocomplete="off">
+        <p class="hint">Chess.com bietet keine öffentliche Abfrage einzelner Partien. Die App durchsucht daher die Monatsarchive des angegebenen Spielers (offizielle API api.chess.com).</p>
+      </div>
+      <div class="error hidden" id="import-error"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="import-cancel">Abbrechen</button>
+        <button type="submit" class="btn primary" id="import-ok">Laden und analysieren</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Einstellungen -->
+  <dialog id="dlg-settings" class="dialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Einstellungen</h2>
+      <label for="set-depth">Analysetiefe: <b id="set-depth-value"></b></label>
+      <input id="set-depth" type="range" step="1">
+      <label for="set-workers">Parallele Engines: <b id="set-workers-value"></b></label>
+      <input id="set-workers" type="range" min="1" step="1">
+      <p class="hint">Höhere Tiefe ist genauer, dauert aber länger. Eine neue Tiefe gilt ab der nächsten Analyse.</p>
+      <label for="set-volume">Lautstärke der Zugklänge: <b id="set-volume-value"></b></label>
+      <input id="set-volume" type="range" min="0" max="100" step="5">
+      <label for="set-notation">Notation in der Zugliste</label>
+      <select id="set-notation">
+        <option value="figurine">Figurensymbole (♘f3)</option>
+        <option value="de">Deutsch (Sf3)</option>
+        <option value="en">Englisch (Nf3)</option>
+      </select>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="btn-reanalyse">Partie neu analysieren</button>
+        <button type="submit" class="btn primary">Schließen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
