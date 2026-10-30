@@ -51,6 +51,20 @@ jedem Push auf `main` und veröffentlicht sie automatisch. Änderungen gehen als
 so online: Code ändern, committen, `git push`. Den Stand sieht man im Reiter
 „Actions“ des Repositorys.
 
+### Als App installieren (Taskleiste, Startmenü)
+
+Die Seite ist eine installierbare Web-App (`manifest.webmanifest`, `sw.js`,
+Symbole in `public/icons/`). In Edge oder Chrome die Website öffnen und in der
+Adressleiste auf das Symbol „App verfügbar – Installieren“ klicken (oder Menü
+„…“ → „Apps“ → „Diese Website als App installieren“). Im Installationsdialog
+„An Taskleiste anheften“ ankreuzen. Die App läuft dann in einem eigenen Fenster,
+startet auch ohne Internet (Link-Import braucht natürlich Netz) und aktualisiert
+sich, sobald eine neue Fassung veröffentlicht ist. Deinstallieren: in der App
+oben rechts „…“ → „Deinstallieren“.
+
+Die Symbole erzeugt `npm run icons` (weißer Springer aus dem cburnett-Satz auf
+Brettfeldern, gezeichnet mit Edge/Chrome im Hintergrund).
+
 ## Bedienung
 
 | Aktion | Wie |
@@ -181,6 +195,7 @@ Ergebnisse.
 server.js                 lokaler Server + Chess.com-Proxy
 START.bat                 Doppelklick-Start unter Windows
 scripts/build.mjs         baut die statische Website nach dist/
+scripts/make-icons.mjs    erzeugt die App-Symbole in public/icons/
 scripts/build-openings.mjs  erzeugt public/data/openings.json
 .github/workflows/pages.yml veröffentlicht auf GitHub Pages
 public/
@@ -213,12 +228,17 @@ Tests ausführen:
 npm test
 ```
 
-### Engine wechseln
+### Engine
 
-In `public/js/config.js` steht `ENGINE.file`. Standard ist
-`stockfish-19-lite-single.js` (klein, schnell, braucht keine besonderen
-Server-Header). Für mehr Spielstärke `stockfish-19-single.js` eintragen: lädt
-beim Start etwa 100 MB, rechnet genauer, ist aber langsamer.
+Standard ist das volle **Stockfish 19** (Single-Thread-Fassung,
+`stockfish-19-single.js`, ca. 95 MB mit eingebautem Netz). Es wird beim ersten
+Aufruf einmal geladen und danach vom Service Worker gespeichert; währenddessen
+zeigt die Fortschrittsleiste „Stockfish wird geladen“. Unter „Einstellungen“
+lässt sich auf **Stockfish 19 Lite** (1,8 MB, kleineres Netz) umschalten, etwa
+für Handys oder langsame Verbindungen. Beide Varianten stehen in
+`ENGINE.variants` in `public/js/config.js`. Die Mehr-Thread-Fassungen werden nicht
+benutzt, weil sie besondere Server-Header brauchen, die GitHub Pages nicht setzt;
+stattdessen laufen mehrere Engines parallel.
 
 ## Lizenzen
 

@@ -56,6 +56,8 @@ class App {
     this.muted = store.get('muted', false);
     this.depth = store.get('depth', ENGINE.defaultDepth);
     this.workers = store.get('workers', ENGINE.workers);
+    this.engine = store.get('engine', ENGINE.defaultVariant);
+    if (!ENGINE.variants[this.engine]) this.engine = ENGINE.defaultVariant;
     this.progress = { done: 0, total: 0, running: false };
 
     this.board = new Board({
@@ -77,6 +79,7 @@ class App {
     this.analyzer = new Analyzer({
       depth: this.depth,
       workers: this.workers,
+      engineUrl: ENGINE.variants[this.engine].file,
       onUpdate: () => this.scheduleRender(),
       onProgress: (p) => this.showProgress(p),
     });
@@ -225,12 +228,14 @@ class App {
     $('player-top').innerHTML = name(whiteBottom ? 'Black' : 'White');
   }
 
-  showProgress({ done, total, running }) {
+  showProgress({ done, total, running, loading }) {
     this.progress = { done, total, running };
     $('progress').classList.toggle('hidden', !running);
     if (!running) return;
     $('progress-fill').style.width = `${total ? (done / total) * 100 : 0}%`;
-    $('progress-text').textContent = `Analyse ${done}/${total} · Tiefe ${this.analyzer.depth}`;
+    $('progress-text').textContent = loading
+      ? (this.engine === 'full' ? 'Stockfish wird geladen (beim ersten Mal ca. 95 MB) …' : 'Stockfish wird geladen …')
+      : `Analyse ${done}/${total} · Tiefe ${this.analyzer.depth}`;
   }
 
   updateArrowButton() {
@@ -383,6 +388,9 @@ class App {
     const workers = $('set-workers');
     const notation = $('set-notation');
     const volume = $('set-volume');
+    const engine = $('set-engine');
+    engine.innerHTML = Object.entries(ENGINE.variants)
+      .map(([key, v]) => `<option value="${key}">${escapeHtml(v.label)}</option>`).join('');
     depth.min = ENGINE.minDepth;
     depth.max = ENGINE.maxDepth;
     workers.max = Math.max(1, navigator.hardwareConcurrency || 2);
@@ -395,6 +403,7 @@ class App {
       depth.value = this.depth;
       workers.value = this.workers;
       notation.value = this.moveList.style;
+      engine.value = this.engine;
       volume.value = Math.round(this.volume * 100);
       $('set-volume-value').textContent = `${volume.value} %`;
       sync();
@@ -417,6 +426,12 @@ class App {
       store.set('volume', this.volume);
       if (this.muted && this.volume > 0) this.toggleSound();
       playSound('move', this.volume);
+    };
+    engine.onchange = () => {
+      this.engine = engine.value;
+      store.set('engine', this.engine);
+      this.analyzer.setEngine(ENGINE.variants[this.engine].file);
+      this.reanalyse();
     };
     notation.onchange = () => {
       this.moveList.style = notation.value;
@@ -451,6 +466,13 @@ async function init() {
     }
   }
   $('dlg-import').showModal();
+}
+
+// Service Worker: macht die App installierbar (Taskleiste/Startmenü) und offline startbar
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service Worker nicht registriert', e));
+  });
 }
 
 init();

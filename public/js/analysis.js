@@ -7,18 +7,31 @@ import { terminalAnalysis, buildAnalysis, reviewMove, isBookMove } from './class
 import { lookupOpening } from './openings.js';
 
 export class Analyzer {
-  constructor({ depth, workers, onUpdate, onProgress }) {
+  constructor({ depth, workers, engineUrl, onUpdate, onProgress }) {
     this.depth = depth;
+    this.workers = workers;
     this.onUpdate = onUpdate;
     this.onProgress = onProgress;
-    this.pool = new EnginePool({ url: ENGINE.file, size: workers, hashMb: ENGINE.hashMb });
     this.total = 0;
     this.done = 0;
     this.pendingNodes = new Set();
+    this.createPool(engineUrl);
+  }
+
+  createPool(url) {
+    this.pool = new EnginePool({ url, size: this.workers, hashMb: ENGINE.hashMb, onReady: () => this.report() });
   }
 
   setWorkers(n) {
+    this.workers = n;
     this.pool.resize(n);
+  }
+
+  // Andere Engine-Datei: alte Engines beenden, neue laden (Analyse startet der Aufrufer neu)
+  setEngine(url) {
+    this.cancel();
+    this.pool.terminate();
+    this.createPool(url);
   }
 
   // Ganze Partie analysieren: zuerst die Hauptpartie, dann Varianten.
@@ -98,7 +111,10 @@ export class Analyzer {
   }
 
   report() {
-    this.onProgress?.({ done: this.done, total: this.total, running: this.done < this.total });
+    const running = this.done < this.total;
+    // Solange noch keine Engine geladen ist (die volle lädt beim ersten Mal ~95 MB)
+    const loading = running && this.pool.readyCount === 0;
+    this.onProgress?.({ done: this.done, total: this.total, running, loading });
   }
 
   cancel() {

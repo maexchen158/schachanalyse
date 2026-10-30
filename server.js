@@ -32,6 +32,7 @@ const MIME = {
   '.wasm': 'application/wasm',
   '.map': 'application/json; charset=utf-8',
   '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json',
 };
 
 // Chess.com bittet darum, dass Programme sich mit einer erkennbaren Kennung melden.

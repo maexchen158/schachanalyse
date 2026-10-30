@@ -26,8 +26,9 @@ export function parseInfo(line) {
 }
 
 class EngineWorker {
-  constructor(url, hashMb) {
+  constructor(url, hashMb, onReady) {
     this.worker = new Worker(url);
+    this.isReady = false;
     this.listeners = new Set();
     this.worker.onmessage = (ev) => {
       const line = typeof ev.data === 'string' ? ev.data : String(ev.data);
@@ -40,6 +41,8 @@ class EngineWorker {
       this.send(`setoption name Hash value ${hashMb}`);
       this.send('isready');
       await this.waitFor((l) => l === 'readyok');
+      this.isReady = true;
+      onReady?.();
     })();
   }
 
@@ -103,9 +106,10 @@ class EngineWorker {
 }
 
 export class EnginePool {
-  constructor({ url, size, hashMb }) {
+  constructor({ url, size, hashMb, onReady }) {
     this.url = url;
     this.hashMb = hashMb;
+    this.onReady = onReady;
     this.workers = [];
     this.queue = [];
     this.generation = 0;
@@ -115,7 +119,7 @@ export class EnginePool {
   // Anzahl paralleler Engines ändern; beschäftigte Engines enden nach ihrem Auftrag.
   resize(size) {
     this.size = size;
-    while (this.workers.length < size) this.workers.push(new EngineWorker(this.url, this.hashMb));
+    while (this.workers.length < size) this.workers.push(new EngineWorker(this.url, this.hashMb, this.onReady));
     while (this.workers.length > size) {
       const idx = this.workers.findIndex((w) => !w.busy);
       if (idx < 0) break;
@@ -168,5 +172,15 @@ export class EnginePool {
 
   get pending() {
     return this.queue.length + this.workers.filter((w) => w.busy).length;
+  }
+
+  get readyCount() {
+    return this.workers.filter((w) => w.isReady).length;
+  }
+
+  terminate() {
+    for (const w of this.workers) w.terminate();
+    this.workers = [];
+    this.queue = [];
   }
 }

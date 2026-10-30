@@ -2,9 +2,13 @@
 // Gewinnwahrscheinlichkeit in Prozentpunkten (0–100) aus Sicht des ziehenden Spielers.
 
 export const ENGINE = {
-  // Stockfish 19 "lite single-threaded": klein, braucht keine Cross-Origin-Isolation.
-  // Für mehr Spielstärke "stockfish-19-single.js" eintragen (lädt ca. 100 MB).
-  file: 'vendor/stockfish/stockfish-19-lite-single.js',
+  // Stockfish 19, jeweils die Single-Thread-Fassung (braucht keine besonderen Server-Header).
+  // Mehrere Instanzen laufen parallel (workers), das ersetzt die Threads.
+  variants: {
+    full: { file: 'vendor/stockfish/stockfish-19-single.js', label: 'Stockfish 19 (voll, ca. 95 MB, stärker)' },
+    lite: { file: 'vendor/stockfish/stockfish-19-lite-single.js', label: 'Stockfish 19 Lite (1,8 MB, schneller geladen)' },
+  },
+  defaultVariant: 'full',
   defaultDepth: 16,
   minDepth: 8,
   maxDepth: 26,

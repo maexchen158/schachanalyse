@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Schachanalyse</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%236f9150'/><text x='16' y='25' font-size='24' text-anchor='middle' fill='white'>♞</text></svg>">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#25272b">
   <link rel="stylesheet" href="vendor/chessground/assets/chessground.base.css">
   <link rel="stylesheet" href="vendor/chessground/assets/chessground.cburnett.css">
   <link rel="stylesheet" href="css/style.css">
@@ -118,6 +121,8 @@
   <dialog id="dlg-settings" class="dialog">
     <form method="dialog" class="dialog-body">
       <h2>Einstellungen</h2>
+      <label for="set-engine">Engine</label>
+      <select id="set-engine"></select>
       <label for="set-depth">Analysetiefe: <b id="set-depth-value"></b></label>
       <input id="set-depth" type="range" step="1">
       <label for="set-workers">Parallele Engines: <b id="set-workers-value"></b></label>

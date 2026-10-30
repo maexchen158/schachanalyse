@@ -31,8 +31,12 @@ for (const f of ['chessground.base.css', 'chessground.cburnett.css']) {
   await copy(`chessground/assets/${f}`, `vendor/chessground/assets/${f}`);
 }
 
-// Stockfish: nur die Lite-Engine (die volle wäre ~100 MB, zu groß für GitHub)
-for (const f of ['stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm']) {
+// Stockfish: volle Engine (~95 MB) und Lite-Engine, beide Single-Thread.
+// Sie landen nicht im Git-Repository, sondern werden beim Bauen aus node_modules kopiert.
+for (const f of [
+  'stockfish-19-single.js', 'stockfish-19-single.wasm',
+  'stockfish-19-lite-single.js', 'stockfish-19-lite-single.wasm',
+]) {
   await copy(`stockfish/bin/${f}`, `vendor/stockfish/${f}`);
 }
 
