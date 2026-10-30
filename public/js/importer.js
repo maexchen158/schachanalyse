@@ -41,7 +41,9 @@ export function parseGameLink(input) {
     const id = parts.find((p) => /^\d{5,}$/.test(p));
     if (!id) throw new ImportError('In diesem Chess.com-Link steckt keine Partie-ID.');
     const type = parts.includes('daily') ? 'daily' : 'live';
-    return { site: 'chesscom', id, type };
+    // Links aus dem Chess.com-Archiv enthalten oft "?username=…" – dann ist kein Name nötig
+    const user = url.searchParams.get('username');
+    return user ? { site: 'chesscom', id, type, user } : { site: 'chesscom', id, type };
   }
 
   throw new ImportError('Nur Links von lichess.org und chess.com werden unterstützt.');
@@ -133,5 +135,5 @@ export async function fetchGameFromLink(link, { user = '', onStatus } = {}) {
   const info = parseGameLink(link);
   if (info.site === 'lichess') return fetchLichess(info);
   if (info.site === 'lichess-study') return fetchLichessStudy(info);
-  return fetchChessCom(info, { user, onStatus });
+  return fetchChessCom(info, { user: user || info.user || '', onStatus });
 }

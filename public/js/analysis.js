@@ -105,9 +105,17 @@ export class Analyzer {
     }
   }
 
+  // Wertungen der Spieler (wie bei Chess.com hängt die Einordnung davon ab)
+  setRatings(ratings) {
+    this.ratings = ratings;
+  }
+
   review(node) {
     if (!node.parent || !node.analysis || !node.parent.analysis) return;
-    node.review = reviewMove(node, { book: isBookMove(node, lookupOpening) });
+    node.review = reviewMove(node, {
+      book: isBookMove(node, lookupOpening),
+      rating: this.ratings?.[node.color] ?? null,
+    });
   }
 
   report() {

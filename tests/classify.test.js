@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseGame } from '../public/js/notation.js';
 import {
-  winPercent, formatScore, sacrificeValue, reviewMove, gameAccuracy, terminalAnalysis, moveAccuracy,
+  winPercent, formatScore, findSacrifices, reviewMove, gameAccuracy, terminalAnalysis, moveAccuracy,
 } from '../public/js/classify.js';
 
 const OPERA = `1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7
@@ -27,16 +27,26 @@ test('Anzeige der Bewertung', () => {
   assert.equal(formatScore({ mate: 0, mated: 'b' }), '1-0');
 });
 
+const sacs = (n) => findSacrifices(n.parent.fen, n.fen, n.color, { movedTo: n.to, capturedType: n.captured })
+  .map((s) => s.type + s.square + (s.indirect ? '*' : ''));
+
 test('Opfer werden erkannt (Opernpartie)', () => {
   const { tree } = parseGame(OPERA);
-  const sac = (n) => sacrificeValue(n.parent.fen, n.fen, n.color, n.captured);
-  // Springer für zwei Bauern (netto 1) – unter der Opferschwelle
-  assert.ok(sac(bySan(tree, 'Nxb5')) < 2);
-  assert.equal(sac(bySan(tree, 'Rxd7', 'w')), 2); // Turm für Springer
-  assert.equal(sac(bySan(tree, 'Qb8+')), 9);   // Damenopfer
-  assert.equal(sac(bySan(tree, 'e4')), 0);
-  assert.equal(sac(bySan(tree, 'Qxf3')), 0);   // Zurückschlagen ist kein Opfer
-  assert.equal(sac(bySan(tree, 'Bxf3')), 0);   // Abtausch Läufer gegen Springer
+  assert.deepEqual(sacs(bySan(tree, 'Nxb5')), ['nb5']);      // Springer gegen Bauer
+  assert.deepEqual(sacs(bySan(tree, 'Rxd7', 'w')), ['rd7']); // Turm gegen Springer
+  assert.deepEqual(sacs(bySan(tree, 'Qb8+')), ['qb8']);      // Damenopfer
+  assert.deepEqual(sacs(bySan(tree, 'e4')), []);
+  assert.deepEqual(sacs(bySan(tree, 'Qxf3')), []);   // Zurückschlagen ist kein Opfer
+  assert.deepEqual(sacs(bySan(tree, 'Bxf3')), []);   // Läufer gegen Springer ist ein Tausch
+  assert.deepEqual(sacs(bySan(tree, 'Bxd7+')), []);  // Läufer schlägt Turm: kein Opfer
+});
+
+test('Indirektes Opfer: angegriffene Figur bleibt stehen', () => {
+  // 9. h3 greift den Springer g4 an, Schwarz spielt 9…Lc5 und lässt ihn stehen
+  const { tree } = parseGame(`1. e4 e5 2. Nf3 Nf6 3. Bc4 Nc6 4. Ng5 Qe7 5. Nxf7 d5 6. Nxh8 dxc4
+    7. Nc3 Ng4 8. O-O Qh4 9. h3 Bc5 10. hxg4`);
+  assert.deepEqual(sacs(bySan(tree, 'Bc5')), ['ng4*']);
+  assert.deepEqual(sacs(bySan(tree, 'Qh4')), []);
 });
 
 test('Matt wird als Endstellung erkannt', () => {

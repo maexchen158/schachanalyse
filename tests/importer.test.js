@@ -13,6 +13,9 @@ test('Chess.com-Links', () => {
   assert.deepEqual(parseGameLink('https://www.chess.com/game/live/186167189226'), { site: 'chesscom', id: '186167189226', type: 'live' });
   assert.deepEqual(parseGameLink('https://www.chess.com/game/daily/712345678'), { site: 'chesscom', id: '712345678', type: 'daily' });
   assert.deepEqual(parseGameLink('https://www.chess.com/analysis/game/live/186167189226?tab=review'), { site: 'chesscom', id: '186167189226', type: 'live' });
+  // Benutzername steckt im Link
+  assert.deepEqual(parseGameLink('https://www.chess.com/game/live/186217508604?username=dergoethedesschaches&move=0'),
+    { site: 'chesscom', id: '186217508604', type: 'live', user: 'dergoethedesschaches' });
 });
 
 test('ungültige Links', () => {

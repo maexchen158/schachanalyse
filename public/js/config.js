@@ -22,7 +22,18 @@ export const ENGINE = {
 export const WIN_PCT = {
   k: 0.00368208,
   cpCeiling: 1000,     // Bewertungen werden auf ±10 Bauern begrenzt
+  // Wie bei Chess.com hängt die Einordnung von der Spielstärke ab: Bei schwächeren
+  // Spielern entscheidet ein Bauer weniger, die Kurve ist flacher. Faktor auf k:
+  // 1 + (Wertung − 1500) / 4000, begrenzt auf 0,8 … 1,3 (eigene Näherung,
+  // Chess.com veröffentlicht seine Werte nicht). false = immer Lichess-Kurve.
+  ratingScaled: true,
 };
+
+// Faktor für die Kurve abhängig von der Wertung des ziehenden Spielers
+export function ratingFactor(rating) {
+  if (!WIN_PCT.ratingScaled || !rating) return 1;
+  return Math.max(0.8, Math.min(1.3, 1 + (rating - 1500) / 4000));
+}
 
 // Verlust gegenüber dem besten Zug (Obergrenzen, jeweils "kleiner als")
 export const THRESHOLDS = {
@@ -32,26 +43,35 @@ export const THRESHOLDS = {
   mistake: 20,         // Fehler: 10–20 %, darüber Blunder
 };
 
-// Großartig: einziger guter Zug
+// Großartig (Chess.com: "kritischer Zug" – der einzige gute Zug, oder einer, der aus
+// Verlust Ausgleich bzw. aus Ausgleich Gewinn macht)
 export const GREAT = {
-  minGap: 15,          // zweitbester Zug ist mind. so viel schlechter als der beste
+  minGap: 13,          // zweitbester Zug ist mind. so viel schlechter als der beste
+  minGapBeginner: 10,  // … großzügiger unter 1000 Wertung (wie bei Chess.com)
   minWinAfter: 25,     // Stellung wird gehalten: nach dem Zug noch mind. so viel
   maxWinSecond: 75,    // war auch der zweitbeste Zug noch klar gewonnen, ist es nicht "einzig"
   excludeRecaptures: true, // Zurückschlagen auf dem Feld des letzten Schlagzugs zählt nicht
   excludeMateInOne: true,  // ein Mattzug selbst ist "Bester Zug", nicht "Großartig"
+  // Aus dem Schach mit höchstens so vielen legalen Zügen: eher erzwungen als großartig
+  maxLegalInCheck: 3,
 };
 
-// Brillant: gutes Figurenopfer
+// Brillant (Chess.com: "ein gutes Figurenopfer" – bester oder fast bester Zug,
+// man steht danach nicht schlecht und war nicht ohnehin schon völlig gewonnen)
 export const BRILLIANT = {
-  maxLoss: 2,          // bester oder nahezu bester Zug
-  minSacrifice: 2,     // geopferter Materialwert in Bauerneinheiten (netto)
-  maxWinBefore: 92,    // Stellung war noch nicht völlig gewonnen
+  maxLoss: 2,          // "fast bester Zug": Verlust höchstens so viel …
+  maxLossBeginner: 5,  // … großzügiger unter 1000 Wertung
   minWinAfter: 45,     // nach dem Opfer steht man nicht schlechter als ausgeglichen
-  excludeRecaptures: true,
-  // Ausnahme von maxWinBefore: Das Opfer erzwingt Matt und kein anderer Zug tut das
-  // (z. B. Morphys Db8+ in der Opernpartie). false = Regel streng anwenden.
-  allowMatingSacrifice: true,
+  // "ohnehin gewonnen": auch der zweitbeste Zug hätte noch so viel gebracht
+  // (93 % ≈ +7 Bauern bei Wertung 1500)
+  maxWinSecond: 93,
+  // Opfer = Figur (Springer oder mehr) hängt nach dem Zug. Auch eine Figur, die
+  // schon angegriffen war und bewusst stehen gelassen wird, zählt (indirektes Opfer).
+  countIgnoredThreats: true,
 };
+
+// Wertung, unter der Chess.com großzügiger mit Brillant/Großartig ist
+export const BEGINNER_RATING = 1000;
 
 // Verpasster Gewinn: Gegner hat gepatzt, der Spieler nutzt es nicht
 export const MISS = {

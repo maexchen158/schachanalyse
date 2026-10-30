@@ -276,6 +276,13 @@ cg-board square.check {
 .move-info { padding: 10px 14px; min-height: 64px; font-size: 14px; }
 .move-info .mi-head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
 .move-info .mi-head .badge { width: 22px; height: 22px; }
+.move-info .mi-explain {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-3);
+  line-height: 1.45;
+}
 .move-info .mi-row { color: var(--muted); margin-top: 4px; }
 .move-info .mi-row b { color: var(--text); font-weight: 600; }
 .move-info .lines { margin-top: 6px; font-size: 13px; color: var(--muted); }

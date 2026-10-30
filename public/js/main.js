@@ -99,6 +99,8 @@ class App {
     this.headers = headers;
     this.tree = tree;
     this.current = tree.root;
+    const elo = (v) => (/^\d{2,4}$/.test(v ?? '') ? Number(v) : null);
+    this.analyzer.setRatings({ w: elo(headers.WhiteElo), b: elo(headers.BlackElo) });
     this.analyzer.analyseTree(tree);
     this.render();
   }

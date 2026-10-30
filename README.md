@@ -147,8 +147,11 @@ zwischengespeichert.
    eingestellten Tiefe (Standard 16) mit **MultiPV 3** analysiert. Mehrere
    Engine-Instanzen laufen parallel in Web Workern (Standard: Kerne − 1, höchstens 4).
 2. Bewertungen werden in **Gewinnwahrscheinlichkeit** umgerechnet
-   (Lichess-Formel `50 + 50 · (2 / (1 + e^(−0,00368208 · cp)) − 1)`, begrenzt auf
-   ±10 Bauern; Matt = 0 % bzw. 100 %).
+   (Lichess-Formel `50 + 50 · (2 / (1 + e^(−0,00368208 · f · cp)) − 1)`, begrenzt auf
+   ±10 Bauern; Matt = 0 % bzw. 100 %). Wie bei Chess.com hängt die Einordnung von
+   der Spielstärke ab: `f = 1 + (Wertung − 1500) / 4000`, begrenzt auf 0,8–1,3.
+   Für schwächere Spieler ist die Kurve flacher, ein Fehler wiegt also weniger.
+   Das ist eine eigene Näherung; Chess.com veröffentlicht seine Werte nicht.
 3. **Verlust** eines Zuges = Gewinnwahrscheinlichkeit des besten Zuges minus die
    des gespielten Zuges (aus Sicht des Ziehenden). Steht der gespielte Zug in den
    MultiPV-Zeilen, wird dessen Wert genommen, sonst die Bewertung der Folgestellung.
@@ -158,8 +161,8 @@ zwischengespeichert.
 | --- | --- |
 | Theorie | Alle Stellungen bis hierher stehen in der Eröffnungsdatenbank |
 | (einziger legaler Zug) | wird als „Bester Zug“ gewertet |
-| Brillant | Verlust ≤ 2 %, Netto-Materialopfer ≥ 2 Bauern, Stellung vorher nicht schon > 92 % gewonnen, danach ≥ 45 %, kein Zurückschlagen. Ausnahme: das Opfer ist der einzige Zug, der Matt erzwingt (`allowMatingSacrifice`) |
-| Großartig | Engine-Topzug, zweitbester Zug ≥ 15 Punkte schlechter und selbst ≤ 75 %, Stellung danach ≥ 25 %, kein Zurückschlagen, kein Matt in eins |
+| Brillant | Ein Figurenopfer (siehe unten), Verlust ≤ 2 % (unter 1000 Wertung ≤ 5 %), danach ≥ 45 %, nicht ohnehin gewonnen (zweitbester Zug < 93 % und nicht beide Züge mit Mattzwang), keine Umwandlung, nicht aus dem Schach heraus |
+| Großartig | Engine-Topzug, zweitbester Zug ≥ 13 Punkte schlechter (unter 1000 Wertung ≥ 10) und selbst ≤ 75 %, Stellung danach ≥ 25 %, kein Zurückschlagen, kein Matt in eins, die gezogene Figur hängt nicht, kein Fluchtzug aus dem Schach mit ≤ 3 Möglichkeiten |
 | Bester Zug | entspricht dem Engine-Topzug |
 | Verpasster Gewinn | Gegner verlor im Zug davor ≥ 10 %, bester Zug hätte ≥ 60 % gebracht, gespielter Zug verliert ≥ 10 % und man steht wieder etwa wie vor dem Gegnerfehler |
 | Ausgezeichnet | Verlust < 2 % |
@@ -168,11 +171,25 @@ zwischengespeichert.
 | Fehler | 10–20 % |
 | Blunder | > 20 % |
 
-**Opfererkennung:** Nach dem Zug wird für jede eigene Figur ein statischer
-Abtausch (SEE) mit echten legalen Schlagzügen durchgerechnet (Fesselungen zählen
-also mit). Der größte mögliche Materialgewinn des Gegners minus das gerade
-geschlagene Material ist das Opfer. Hing vor dem Zug schon genauso viel, gilt
-es nicht als Opfer.
+**Opfererkennung** (nach dem, was Chess.com öffentlich beschreibt: „ein gutes
+Figurenopfer“, großzügiger bei schwächeren Spielern): Nach dem Zug wird jede
+eigene Figur ab Springer geprüft. Sie gilt als geopfert, wenn sie **hängt**, also
+von einer billigeren Figur angegriffen wird oder per Abtausch (mit echten legalen
+Schlagzügen, Fesselungen zählen mit) verloren geht. Ausgenommen sind Figuren, die
+nicht mehr wert sind als das gerade Geschlagene (das ist ein Tausch). Auch eine
+Figur, die schon angegriffen war und bewusst stehen gelassen wird, zählt
+(**indirektes Opfer**, z. B. 5…d5 nach 5.Sxf7 mit Turm auf h8). Das Opfer muss
+echt sein: Bei Opfern unter Turmwert muss es ein Schlagen geben, nach dem nicht
+sofort Matt in 1 folgt.
+
+**Erklärungen:** Zu jedem Zug erzeugt `public/js/explain.js` einen kurzen Satz aus
+Kategorie und Engine-Daten: Eröffnungsname, Opfer, einziger guter Zug, Matt
+erlaubt bzw. verpasst, hängende Figur samt der Antwort, die sie gewinnt,
+verpasster Gewinnzug und der bessere Zug mit Bewertung.
+
+Geprüft an vier Partien: eine 400er-Partie (2× Brillant, wie in der
+Chess.com-Vorschau), die Opernpartie (Sxb5, Txd7, Db8+), eine Blitzpartie von
+Carlsen und eine von Nakamura.
 
 **Genauigkeit** pro Spieler nach dem Verfahren von Lichess: Genauigkeit je Zug
 `103,17 · e^(−0,0435 · Verlust) − 3,17` (+1), daraus Mittel aus

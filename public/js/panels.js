@@ -6,6 +6,7 @@ import { CATEGORIES, CATEGORY_ORDER, badgeHtml } from './categories.js';
 import { formatSan } from './notation.js';
 import { moveNumber } from './tree.js';
 import { playerInfo } from './gameinfo.js';
+import { explainMove } from './explain.js';
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -72,6 +73,9 @@ export function renderMoveInfo(el, node, { style, analysing }) {
     const num = `${moveNumber(node)}${node.color === 'w' ? '.' : '…'}`;
     const cat = r ? CATEGORIES[r.key] : null;
     parts.push(`<div class="mi-head">${r ? badgeHtml(r.key) : ''}<span>${num} ${escapeHtml(formatSan(node.san, style))}</span>${cat ? `<span style="color:${cat.color}">${cat.label}</span>` : ''}</div>`);
+    // Kurze Erklärung, warum der Zug so eingeordnet ist
+    const text = r ? explainMove(node, { style }) : '';
+    if (text) parts.push(`<div class="mi-explain">${escapeHtml(text)}</div>`);
   }
 
   if (a) {
@@ -94,8 +98,6 @@ export function renderMoveInfo(el, node, { style, analysing }) {
     } else {
       row.push('Engine-Zug');
     }
-    if (r.forced) row.push('einziger legaler Zug');
-    if (r.key === 'brilliant' && r.sacrifice) row.push(`Opfer: ${r.sacrifice} Bauerneinheiten`);
     parts.push(`<div class="mi-row">${row.join(' · ')}</div>`);
   }
 
